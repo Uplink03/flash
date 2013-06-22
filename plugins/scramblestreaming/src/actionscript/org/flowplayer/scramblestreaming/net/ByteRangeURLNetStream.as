@@ -34,10 +34,9 @@ package org.flowplayer.scramblestreaming.net
 		protected var log:Log = new Log(this);
 		private var _ended:Boolean;
 
-		private const TIMER_INTERVAL:Number = 50;
-		private const TIMER_BYTES:Number = 50 * 1024;
+		private const TIMER_INTERVAL:uint = 50;
+		private const TIMER_BYTES:uint = 50 * 1024;
 
-		private var _buffer:ByteArray = new ByteArray();
 		private var _encbuffer:ByteArray = new ByteArray();
 		private var _timer:Timer = new Timer(TIMER_INTERVAL);
 
@@ -52,21 +51,19 @@ package org.flowplayer.scramblestreaming.net
 		{
 			var bytes:ByteArray = new ByteArray();
 
-			var bytesToProcess:Number = TIMER_BYTES;
+			var bytesToProcess:uint = TIMER_BYTES;
 			if (_encbuffer.bytesAvailable < bytesToProcess)
 				bytesToProcess = _encbuffer.bytesAvailable;
 			for (var i:uint = 0; i < bytesToProcess; i++)
 				bytes.writeByte((~_encbuffer.readUnsignedByte()) & 0xff);
 
 			appendBytes(bytes);
-			_buffer.writeBytes(bytes);
-			_bytesLoaded += bytes.length;
 
-			if (_bytesLoaded == _bytesTotal)
+			if (_encbuffer.position >= _bytesTotal)
 			{
 				_timer.reset();
 
-				_seekTime = _seekTime + 1;
+				//_seekTime = _seekTime + 1;
 				_ended = true;
 				this.appendBytesAction(NetStreamAppendBytesAction.END_SEQUENCE);
 
@@ -161,6 +158,7 @@ package org.flowplayer.scramblestreaming.net
 			);
 			*/
 			
+			_bytesLoaded += _urlStream.bytesAvailable;
 			_urlStream.readBytes(_encbuffer, _encbuffer.position + _encbuffer.bytesAvailable);
 		}
 
@@ -185,23 +183,17 @@ package org.flowplayer.scramblestreaming.net
 
 				super.seek(0);
 				this.appendBytesAction(NetStreamAppendBytesAction.RESET_SEEK);
-				
+
 				var bytePos:uint = getByteRange(_seekTime);
 				log.debug("_seekTime: " + _seekTime + "; bytePos: " + bytePos);
 
-				var bytes:ByteArray = new ByteArray();
-				_buffer.position = bytePos;
-				_buffer.readBytes(bytes);
-				// _buffer.position is now at the end of _buffer?
-				appendBytes(bytes);
+				_encbuffer.position = bytePos;
+				_timer.start();
 
 				dispatchEvent(new NetStatusEvent(NetStatusEvent.NET_STATUS,false,false, {code:"NetStream.Play.Seek", level:"status"}));
 			} else {
-
-				//reset seek, bytes loaded and send bytes reset actions
 				_seekTime = 0;
-				_bytesLoaded = 0;
-				//this.appendBytesAction(NetStreamAppendBytesAction.END_SEQUENCE);
+
 				this.appendBytesAction(NetStreamAppendBytesAction.RESET_BEGIN);
 				dispatchEvent(new NetStatusEvent(NetStatusEvent.NET_STATUS,false,false, {code:"NetStream.Play.Start", level:"status"}));
 
@@ -218,15 +210,16 @@ package org.flowplayer.scramblestreaming.net
 
 					_urlStream.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onSecurityError);
 					_urlStream.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+
+					_currentURL = parameters[0];
+					var urlRequest:URLRequest = new URLRequest(_currentURL);
+					_urlStream.load(urlRequest);
 				}
 				else
 				{
-					if (_urlStream.connected) _urlStream.close();
+					_encbuffer.position = 0;
+					_timer.start();
 				}
-
-				_currentURL = parameters[0];
-				var urlRequest:URLRequest = new URLRequest(_currentURL);
-				_urlStream.load(urlRequest);
 			}
 		}
 		
