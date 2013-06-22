@@ -1,4 +1,4 @@
-package org.flowplayer.pseudostreaming.net
+package org.flowplayer.scramblestreaming.net
 {
     import com.adobe.net.URI;
 
@@ -14,7 +14,7 @@ package org.flowplayer.pseudostreaming.net
     import flash.utils.ByteArray;
     import flash.utils.setTimeout;
 
-    import org.flowplayer.pseudostreaming.DefaultSeekDataStore;
+    import org.flowplayer.scramblestreaming.DefaultSeekDataStore;
     import org.flowplayer.util.Log;
     import org.httpclient.HttpClient;
     import org.httpclient.HttpHeader;

@@ -9,7 +9,7 @@
  * Released under the MIT License:
  * http://www.opensource.org/licenses/mit-license.php
  */
-package org.flowplayer.pseudostreaming {
+package org.flowplayer.scramblestreaming {
 
 import org.flowplayer.util.Log;
 import org.flowplayer.model.ClipEventType;
@@ -36,7 +36,7 @@ public class DefaultSeekDataStore {
     }
 
     public static function create(clip:Clip, metaData:Object):DefaultSeekDataStore {
-        var log:Log = new Log("org.flowplayer.pseudostreaming::DefaultKeyFrameStore");
+        var log:Log = new Log("org.flowplayer.scramblestreaming::DefaultKeyFrameStore");
         log.debug("extracting keyframe times and filepositions");
         var store:DefaultSeekDataStore = metaData.seekpoints ? new H264SeekDataStore() : new FLVSeekDataStore();
         store.init(clip, metaData);

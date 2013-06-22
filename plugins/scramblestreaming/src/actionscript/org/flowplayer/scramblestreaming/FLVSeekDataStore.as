@@ -9,7 +9,7 @@
  * Released under the MIT License:
  * http://www.opensource.org/licenses/mit-license.php
  */
-package org.flowplayer.pseudostreaming {
+package org.flowplayer.scramblestreaming {
 
 import org.flowplayer.model.Clip;
 
@@ -29,7 +29,7 @@ public class FLVSeekDataStore extends DefaultSeekDataStore {
         
         var keyFrameTimes:Array = keyFrames.times;
         if (! keyFrameTimes) {
-            log.error("clip does not have keyframe metadata, cannot use pseudostreaming");
+            log.error("clip does not have keyframe metadata, cannot use scramblestreaming");
         }
         return keyFrameTimes as Array;
     }

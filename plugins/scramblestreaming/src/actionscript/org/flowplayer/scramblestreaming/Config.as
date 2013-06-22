@@ -7,7 +7,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
  
-package org.flowplayer.pseudostreaming {
+package org.flowplayer.scramblestreaming {
 
 	/**
 	 * @author api

@@ -10,7 +10,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-package org.flowplayer.pseudostreaming {
+package org.flowplayer.scramblestreaming {
 import flash.events.NetStatusEvent;
 import flash.net.NetConnection;
 import flash.net.NetStream;
@@ -356,7 +356,7 @@ import org.flowplayer.view.Flowplayer;
         override protected function createNetStream(connection:NetConnection):NetStream
         {
             CONFIG::enableByteRange {
-                import org.flowplayer.pseudostreaming.net.ByteRangeNetStream;
+                import org.flowplayer.scramblestreaming.net.ByteRangeNetStream;
 
                 if (_config.rangeRequests) {
                     log.debug("Using ByteRangeNetStream");

@@ -9,7 +9,7 @@
  * Released under the MIT License:
  * http://www.opensource.org/licenses/mit-license.php
  */
-package org.flowplayer.pseudostreaming {
+package org.flowplayer.scramblestreaming {
 
 import org.flowplayer.model.Clip;
 
