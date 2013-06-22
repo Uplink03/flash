@@ -166,6 +166,7 @@ import org.flowplayer.view.Flowplayer;
 
         override public function get allowRandomSeek():Boolean
         {
+            return false;
             if (! _seekDataStore) return false;
             return _seekDataStore.allowRandomSeek();
         }
@@ -182,7 +183,7 @@ import org.flowplayer.view.Flowplayer;
             return bufferStart <= seconds - clip.start && seconds - clip.start <= bufferEnd;
         }
 
-        private function serverSeek(netStream:NetStream, seconds:Number, setBufferStart:Boolean = true):void
+        private function serverSeek(netStream:NetStream, seconds:Number, setBufferStart:Boolean = false):void
         {
             log.debug("serverSeek()");
             if (setBufferStart) {
@@ -350,25 +351,13 @@ import org.flowplayer.view.Flowplayer;
 
         override public function get type():String
         {
-            return "pseudo";
+            return "scramble";
         }
 
         override protected function createNetStream(connection:NetConnection):NetStream
         {
-            CONFIG::enableByteRange {
-                import org.flowplayer.scramblestreaming.net.ByteRangeNetStream;
-
-                if (_config.rangeRequests) {
-                    log.debug("Using ByteRangeNetStream");
-
-                    Security.allowInsecureDomain("*");
-                    Security.allowDomain("*");
-                    if (_config.policyURL) Security.loadPolicyFile("xmlsocket://" + _config.policyURL);
-
-                    return new ByteRangeNetStream(connection);
-                }
-            }
-            return null;
+            import org.flowplayer.scramblestreaming.net.ByteRangeURLNetStream;
+            return new ByteRangeURLNetStream(connection);
         }
     }
 }
