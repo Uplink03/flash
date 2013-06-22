@@ -356,8 +356,8 @@ import org.flowplayer.view.Flowplayer;
 
         override protected function createNetStream(connection:NetConnection):NetStream
         {
-            import org.flowplayer.scramblestreaming.net.ByteRangeURLNetStream;
-            return new ByteRangeURLNetStream(connection);
+            import org.flowplayer.scramblestreaming.net.ScrambleURLNetStream;
+            return new ScrambleURLNetStream(connection);
         }
     }
 }

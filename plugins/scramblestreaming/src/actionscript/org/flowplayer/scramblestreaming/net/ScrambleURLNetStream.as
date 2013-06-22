@@ -23,7 +23,7 @@ package org.flowplayer.scramblestreaming.net
     import flash.utils.Timer;
     import flash.events.TimerEvent;
 
-    public class ByteRangeURLNetStream extends NetStream
+    public class ScrambleURLNetStream extends NetStream
 	{
 		private var _urlStream:URLStream;
 		private var _bytesTotal:uint = 0;
@@ -40,7 +40,7 @@ package org.flowplayer.scramblestreaming.net
 		private var _encbuffer:ByteArray = new ByteArray();
 		private var _timer:Timer = new Timer(TIMER_INTERVAL);
 
-		public function ByteRangeURLNetStream(connection:NetConnection, peerID:String="connectToFMS")
+		public function ScrambleURLNetStream(connection:NetConnection, peerID:String="connectToFMS")
 		{
 			super(connection, peerID);
 
@@ -171,7 +171,7 @@ package org.flowplayer.scramblestreaming.net
 		}
 		
 		override public function play(...parameters):void {
-			log.debug("ByteRangeURLStream play: " + parameters[0] + " " + parameters[1] + " " + parameters[2]);
+			log.debug("ScrambleURLStream play: " + parameters[0] + " " + parameters[1] + " " + parameters[2]);
 			
 			super.play(null);
 
