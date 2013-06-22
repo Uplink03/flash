@@ -15,15 +15,15 @@ package org.flowplayer.scramblestreaming {
 	/**
 	 * @author api
 	 */
-	public class PseudoStreaming extends Sprite implements PluginFactory {
-		public function PseudoStreaming() {
+	public class ScrambleStreaming extends Sprite implements PluginFactory {
+		public function ScrambleStreaming() {
 		}
 		
 		/**
 		 * A factory method to create the provider.
 		 */
 		public function newPlugin():Object {
-			return new PseudoStreamProvider();
+			return new ScrambleStreamProvider();
 		}
 	}
 }

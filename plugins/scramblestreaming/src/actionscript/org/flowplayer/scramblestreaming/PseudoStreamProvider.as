@@ -28,7 +28,7 @@ import org.flowplayer.view.Flowplayer;
 /**
      * @author api
      */
-    public class PseudoStreamProvider extends NetStreamControllingStreamProvider implements Plugin {
+    public class ScrambleStreamProvider extends NetStreamControllingStreamProvider implements Plugin {
         private var _bufferStart:Number;
         private var _config:Config;
         private var _fileWithKeyframeInfo:String;

@@ -1,27 +1,28 @@
-<project name="Flowplayer pseudostreaming" default="deploy">
+<project name="Flowplayer scramblestreaming" default="deploy">
 
 	<property file="${user.home}/plugin.properties" />
 	<property file="build.properties" />
 	<property file="${devkit-dir}/plugin-build.properties" />
 	<property name="extra-sources" value="../../core/lib/corelib/src" />
+	<property name="plugin-libs" value="${flexdir}/frameworks/locale/en_US/" />
 
     <property name="compiler-defines" value="-define+=CONFIG::enableByteRange,'false'"/>
 	<import file="${devkit-dir}/plugin-build.xml"/>
 	
-	<property name="shortname" value="pseudostreaming" />
+	<property name="shortname" value="scramblestreaming" />
     <property name="basename" value="flowplayer.${shortname}" />
     <property name="releasedir" value="${basename}" />
 	<property name="plugin-binary" value="${basename}.swf" />
 	<property name="plugin-binary-versioned" value="${basename}-${version}.swf" />
 
-	<property name="plugin-main-class" value="org/flowplayer/pseudostreaming/PseudoStreaming.as" />
+	<property name="plugin-main-class" value="org/flowplayer/scramblestreaming/ScrambleStreaming.as" />
 
     <target name="build-byterange">
         <ant antfile="build-byterange.xml" target="build" inheritall="false" />
     </target>
 
 	<target name="release" description="makes a release" depends="build">
-		<copyrelease targetdir="flowplayer.pseudostreaming">
+		<copyrelease targetdir="flowplayer.scramblestreaming">
 			<releasefiles>
 				<fileset dir="${build-dir}">
 				    <include name="${plugin-binary-versioned}"/>
@@ -39,7 +40,7 @@
             </zipfileset>
             <zipfileset prefix="${basename}" dir="${build-dir}">
                 <include name="${plugin-binary-versioned}" />
-                <include name="flowplayer.pseudostreaming-byterange-${version}.swf" />
+                <include name="flowplayer.scramblestreaming-byterange-${version}.swf" />
             </zipfileset>
         </zip>
         <echo message="copying to ${dist-dir}/${basename}.zip" />
