@@ -1,11 +1,12 @@
 package org.flowplayer.scramblestreaming.net
 {
-    import com.adobe.net.URI;
-
     import flash.events.Event;
+    import flash.events.HTTPStatusEvent;
     import flash.events.IOErrorEvent;
     import flash.events.NetStatusEvent;
+    import flash.events.ProgressEvent;
     import flash.events.SecurityErrorEvent;
+
     import flash.net.NetConnection;
     import flash.net.NetStream;
     import flash.net.URLStream;
@@ -14,25 +15,14 @@ package org.flowplayer.scramblestreaming.net
     import flash.utils.ByteArray;
     import flash.utils.setTimeout;
 
+    import flash.net.URLRequest;
+
     import org.flowplayer.scramblestreaming.DefaultSeekDataStore;
     import org.flowplayer.util.Log;
-    import org.httpclient.HttpClient;
-    import org.httpclient.HttpHeader;
-    import org.httpclient.HttpRequest;
-    import org.httpclient.events.HttpDataEvent;
-    import org.httpclient.events.HttpErrorEvent;
-    import org.httpclient.events.HttpListener;
-    import org.httpclient.events.HttpRequestEvent;
-    import org.httpclient.events.HttpStatusEvent;
-    import org.httpclient.http.Get;
 
-
-    public class ByteRangeNetStream extends NetStream
+    public class ByteRangeURLNetStream extends NetStream
 	{
-		private var _dataStream:URLStream;
-		private var _client:HttpClient;
-		private var _httpHeader:HttpHeader;
-		private var _eTag:String;
+		private var _urlStream:URLStream;
 		private var _bytesTotal:uint = 0;
 		private var _bytesLoaded:uint = 0;
 		private var _seekTime:uint = 0;
@@ -40,84 +30,115 @@ package org.flowplayer.scramblestreaming.net
 		private var _seekDataStore:DefaultSeekDataStore;
 		protected var log:Log = new Log(this);
 		private var _ended:Boolean;
-		private var _serverAcceptsBytes:Boolean;
 
-		
-		public function ByteRangeNetStream(connection:NetConnection, peerID:String="connectToFMS")
+		private var _buffer:ByteArray = new ByteArray();
+
+		public function ByteRangeURLNetStream(connection:NetConnection, peerID:String="connectToFMS")
 		{
-			super(connection, peerID);	  
+			super(connection, peerID);
+		}
+
+		private function onOpen(event:Event):void
+		{
+			log.debug("Stream open");
+
+			_bytesLoaded = 0;
+			_bytesTotal = 0;
 			
+			appendBytesAction(NetStreamAppendBytesAction.RESET_BEGIN);
 			
+			dispatchEvent(new NetStatusEvent(
+				NetStatusEvent.NET_STATUS,
+				false,
+				false,
+				{code: "NetStream.Play.Start", level: "status"}
+			));
 		}
 		
-		private function onIOError(event:IOErrorEvent):void {
-			log.debug("IO error has occured " + event.text);
-			dispatchEvent(new NetStatusEvent(NetStatusEvent.NET_STATUS,false,false, {code:"NetStream.Play.Failed", level:"error", message: event.text})); 
-		}
-		
-		private function onSecurityError(event:SecurityErrorEvent):void {
-			log.debug("Security error has occured " + event.text);
-			dispatchEvent(new NetStatusEvent(NetStatusEvent.NET_STATUS,false,false, {code:"NetStream.Play.Failed", level:"error", message: event.text})); 
-		}
-		
-		private function onError(event:HttpErrorEvent):void {
-			log.debug("An error has occured " + event.text);
-			dispatchEvent(new NetStatusEvent(NetStatusEvent.NET_STATUS,false,false, {code:"NetStream.Play.Failed", level:"error", message: event.text})); 
-		}
-		
-		private function onTimeoutError(event:HttpErrorEvent):void {
-			log.debug("Timeout error has occured " + event.text);
-			dispatchEvent(new NetStatusEvent(NetStatusEvent.NET_STATUS,false,false, {code:"NetStream.Play.Failed", level:"error", message: event.text})); 
-		}
-		
-		private function onComplete(event:HttpRequestEvent):void {
-	
-			
-		}
-		
-		private function streamComplete():void {
+		private function onComplete(event:Event):void
+		{
+			log.debug("Stream complete");
+
 			_seekTime = _seekTime + 1;
 			_ended = true;
 			this.appendBytesAction(NetStreamAppendBytesAction.END_SEQUENCE);
-            dispatchEvent(new NetStatusEvent(NetStatusEvent.NET_STATUS,false,false, {code:"NetStream.Play.Stop", level:"status"}));
+
+			dispatchEvent(new NetStatusEvent(
+				NetStatusEvent.NET_STATUS,
+				false,
+				false,
+				{code: "NetStream.Play.Stop", level: "status"}
+			));
 		}
-		
-		private function onClose(event:Event):void {
-	
-			//send complete status once the buffer length is finished
-			if (_bytesLoaded >= _bytesTotal) {
-				setTimeout(streamComplete, this.bufferLength * 1000);
-			}
-			
-		}
-		
-		private function onStatus(event:HttpStatusEvent):void {
-			
-			switch (event.response.code) {
+
+		private function onStatus(event:HTTPStatusEvent):void
+		{
+			log.debug("HTTP Status: " + event.status);
+			switch (event.status)
+			{
 				case 404: 
-					dispatchEvent(new NetStatusEvent(NetStatusEvent.NET_STATUS,false,false, {code:"NetStream.Play.StreamNotFound", level:"error"})); 
-				break;
+					dispatchEvent(new NetStatusEvent(
+						NetStatusEvent.NET_STATUS,
+						false,
+						false,
+						{code:"NetStream.Play.StreamNotFound", level:"error"}
+					)); 
+					break;
 				case 200:
 				default:
-					_eTag = event.response.header.getValue("ETag");
-					if (!_bytesTotal) _bytesTotal = event.response.contentLength;
-					
-					_httpHeader = event.response.header;
-					
-					if (!_serverAcceptsBytes && _httpHeader.find("Accept-Ranges")) {
-						log.debug("Server accepts byte ranges");
-						_serverAcceptsBytes = true; 
-					}
-					
-				break;
+					break;
 			}
+		}
+
+		private function onSecurityError(event:SecurityErrorEvent):void
+		{
+			log.debug("Security error has occured: " + event.text);
+			dispatchEvent(new NetStatusEvent(
+				NetStatusEvent.NET_STATUS,
+				false,
+				false,
+				{code:"NetStream.Play.Failed", level:"error", message: event.text}
+			)); 
+		}
+
+		private function onIOError(event:IOErrorEvent):void
+		{
+			log.debug("IO error has occured: " + event.text);
+			dispatchEvent(new NetStatusEvent(
+				NetStatusEvent.NET_STATUS,
+				false,
+				false,
+				{code:"NetStream.Play.Failed", level:"error", message: event.text}
+			)); 
+		}
+
+		private function onProgress(event:ProgressEvent):void
+		{
+			if (!_bytesTotal) _bytesTotal = event.bytesTotal;
+
+			if (_urlStream.bytesAvailable == 0)
+				return;
+
+			/*
+			log.debug("Progress:" +
+				" loaded: " + event.bytesLoaded +
+				" total: " + event.bytesTotal +
+				" available: " + _urlStream.bytesAvailable
+			);
+			*/
 			
+			var bytes:ByteArray = new ByteArray();
+			_urlStream.readBytes(bytes);
+
+			var encbytes:ByteArray = new ByteArray();
+			for (var i:uint = 0; i < bytes.length; i++)
+				encbytes[i] = ((~bytes[i]) & 0xff);
+
+			_buffer.writeBytes(encbytes);
+			appendBytes(encbytes);
+			_bytesLoaded += encbytes.length;
 		}
-		
-		public function getRequestHeader():HttpHeader {
-			return _httpHeader;
-		}
-		
+
 		override public function get bytesTotal():uint {
 			return _bytesTotal;
 		}
@@ -127,50 +148,27 @@ package org.flowplayer.scramblestreaming.net
 		}
 		
 		override public function play(...parameters):void {
+			log.debug("ByteRangeURLStream play: " + parameters[0] + " " + parameters[1] + " " + parameters[2]);
 			
 			super.play(null);
 
-            //#409 cleanup reuse http client
-            if (!_client) {
-			_client = new HttpClient();
-			var httplistener:HttpListener = new HttpListener();
-			_client.listener = httplistener;
-			
-			_client.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
-			_client.addEventListener(HttpDataEvent.DATA, onData);
-			_client.addEventListener(HttpStatusEvent.STATUS, onStatus);
-			//_client.addEventListener(HttpRequestEvent.COMPLETE, onComplete);
-			_client.addEventListener(Event.CLOSE, onClose);
-			_client.addEventListener(HttpErrorEvent.ERROR, onError);
-			_client.addEventListener(HttpErrorEvent.TIMEOUT_ERROR, onTimeoutError);
-			_client.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onSecurityError);
-            } else {
-                _client.cancel();
-            }
-
-		
-			var uri:URI = new URI(parameters[0]);
-			_currentURL = parameters[0];
-			var request:HttpRequest = new Get();
-			
-			_ended = false;
-			if (Number(parameters[1]) && DefaultSeekDataStore(parameters[2]) && _serverAcceptsBytes) {
+			if (Number(parameters[1]) && DefaultSeekDataStore(parameters[2])) {
 				_seekTime = Number(parameters[1]);
 				_seekDataStore = DefaultSeekDataStore(parameters[2]);
 
-				_bytesLoaded = getByteRange(_seekTime);
-				
-				request.addHeader("If-Range", _eTag);
-
-				request.addHeader("Range", "bytes="+_bytesLoaded+"-");
 				super.seek(0);
 				this.appendBytesAction(NetStreamAppendBytesAction.RESET_SEEK);
 				
+				var bytePos:uint = getByteRange(_seekTime);
+				log.debug("_seekTime: " + _seekTime + "; bytePos: " + bytePos);
+
 				var bytes:ByteArray = new ByteArray();
+				_buffer.position = bytePos;
+				_buffer.readBytes(bytes);
+				// _buffer.position is now at the end of _buffer?
 				appendBytes(bytes);
 
 				dispatchEvent(new NetStatusEvent(NetStatusEvent.NET_STATUS,false,false, {code:"NetStream.Play.Seek", level:"status"}));
-				
 			} else {
 
 				//reset seek, bytes loaded and send bytes reset actions
@@ -179,11 +177,30 @@ package org.flowplayer.scramblestreaming.net
 				//this.appendBytesAction(NetStreamAppendBytesAction.END_SEQUENCE);
 				this.appendBytesAction(NetStreamAppendBytesAction.RESET_BEGIN);
 				dispatchEvent(new NetStatusEvent(NetStatusEvent.NET_STATUS,false,false, {code:"NetStream.Play.Start", level:"status"}));
-				
+
+				if (!_urlStream)
+				{
+					_urlStream = new URLStream();
+
+					_urlStream.addEventListener(Event.OPEN, onOpen);
+					_urlStream.addEventListener(ProgressEvent.PROGRESS, onProgress);
+					_urlStream.addEventListener(Event.COMPLETE, onComplete);
+
+					//_urlStream.addEventListener(HTTPStatusEvent.HTTP_RESPONSE_STATUS, onResponseStatus); // AIR only
+					_urlStream.addEventListener(HTTPStatusEvent.HTTP_STATUS, onStatus);
+
+					_urlStream.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onSecurityError);
+					_urlStream.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+				}
+				else
+				{
+					if (_urlStream.connected) _urlStream.close();
+				}
+
+				_currentURL = parameters[0];
+				var urlRequest:URLRequest = new URLRequest(_currentURL);
+				_urlStream.load(urlRequest);
 			}
-			
-	
-			_client.request(uri, request);
 		}
 		
 		private function getByteRange(start:Number):Number {
@@ -191,13 +208,8 @@ package org.flowplayer.scramblestreaming.net
 		}
 		
 		override public function seek(seconds:Number):void {
-			play(_currentURL, seconds, _seekDataStore);	
+			play(_currentURL, seconds, _seekDataStore);
 		}
-
-		private function onData(event:HttpDataEvent):void {   
-            appendBytes(event.bytes);
-            _bytesLoaded += event.bytes.length;
-        }
 		
 		override public function get time():Number {
 			return _seekTime + super.time;	
